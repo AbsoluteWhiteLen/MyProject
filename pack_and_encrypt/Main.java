@@ -210,7 +210,7 @@ public class Main extends BaseClass {
 
 			case 2:
 				extractFile = ExtractFile.getInstance(packedFilePath, extractDir);
-				if (extractFile.lookAllPackedFileName() >= 0)
+				if (extractFile.seeAllPackedFileName() >= 0)
 					System.out.println("The files in the packed file are as shown above");
 				else
 					return;

@@ -11,60 +11,70 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * packFile
+ * 
+ * @author son
+ */
 public class PackFile extends BaseClass {
 
-	// 文件路径列表
+	// filePath list
 	static ArrayList<String> filePathList = new ArrayList<String>();
 
-	// 文件列表
+	// file list
 	static ArrayList<File> fileList = new ArrayList<File>();
 
-	// 文件过滤
+	// file filter
 	static String[] filter;
 
-	// 找不到文件列�?
-	ArrayList<String> notFoundList = new ArrayList<String>();
+	// not found fileList
+	protected ArrayList<String> notFoundList = new ArrayList<String>();
 
-	// 除notFoundList外，剩下的正确的文件列表
-	ArrayList<String> correctList = new ArrayList<String>();
+	// correct fileList
+	protected ArrayList<String> correctList = new ArrayList<String>();
 
-	// 打包文件路径
+	// pacded file path
 	protected static String packedFile;
 
-	// 解压文件时重复文件map
-	Map<String, Integer> repeatFileMap = new HashMap<String, Integer>();
+	// repeated file map
+	protected Map<String, Integer> repeatFileMap = new HashMap<String, Integer>();
 
-	// 打包文件文件头部存储list
-	Header[] header;
+	// header list
+	protected Header[] header;
 
-	// header的有效数�?
-	int headerNum;
+	// number of header
+	protected int headerNum;
 
-	// header元素个数与文件个数的比例
-	final double multiple = 1.7;
+	// factor of headers and files
+	protected final double factor = 1.7;
 
-	// 打包文件头结束标志字�?
-	final String headerEnd = "$$$$";
+	// starter
+	protected final String headerEnd = "$$$$";
 
-	// �?大的offset文件头位�?
-	int maxOffsetHeaderIndex;
+	// max offset of haeder
+	protected int maxOffsetHeaderIndex;
 
-	// 临时header文件路径
-	String headerTemp = System.getProperty("java.io.tmpdir") + "headerTemp";
+	// headerTemp
+	protected String headerTemp = System.getProperty("java.io.tmpdir") + "headerTemp";
 
-	// 临时打包各文件路�?(除去header部分)
-	String filePartTemp = System.getProperty("java.io.tmpdir") + "filePartTemp";
+	// filePartTemp
+	protected String filePartTemp = System.getProperty("java.io.tmpdir") + "filePartTemp";
 
-	// header部分的�?�大�?
-	long headerSize;
+	// headerSize
+	protected long headerSize;
 
-	// 文件部分的�?�大�?
-	long filePartSize;
+	// filePartSize
+	protected long filePartSize;
 
-	// 错误信息代码
+	// errorCode
 	protected static int errorCode;
 
-	// 静�?�内部类单例模式
+	/**
+	 * static class for singleton
+	 * 
+	 * @author son
+	 *
+	 */
 	private static class InstanceHolder {
 		private static final PackFile INSTANCE = new PackFile();
 	}
@@ -72,7 +82,12 @@ public class PackFile extends BaseClass {
 	protected PackFile() {
 	}
 
-	// 获取实例，判断输入是否正确，输入为（aFilePathList：文�?/文件夹列表，aPackedFile：打包文件路�?,aFileList:文件句柄列表,aFilter:文件过滤�?
+	/**
+	 * @param aFilePathList
+	 * @param aPackedFile
+	 * @param aFilter
+	 * @return
+	 */
 	static public final PackFile getInstance(ArrayList<String> aFilePathList, String aPackedFile, String[] aFilter) {
 		errorCode = 0;
 
@@ -92,6 +107,11 @@ public class PackFile extends BaseClass {
 		return InstanceHolder.INSTANCE;
 	}
 
+	/**
+	 * @param aFileList
+	 * @param aPackedFile
+	 * @return
+	 */
 	static public final PackFile getInstance(ArrayList<File> aFileList, String aPackedFile) {
 		errorCode = 0;
 
@@ -110,14 +130,25 @@ public class PackFile extends BaseClass {
 		return InstanceHolder.INSTANCE;
 	}
 
-	// checkError
+	/**
+	 * checkError
+	 * 
+	 * @return
+	 */
 	protected int checkError() {
 		if (errorCode < 0)
 			error(errorCode);
 		return errorCode;
 	}
 
-	// 将一个文件打包到打包文件�?
+	/**
+	 * pack a file
+	 * 
+	 * @param filePath
+	 * @return
+	 * @throws SecurityException
+	 * @throws IOException
+	 */
 	public int packOneFile(String filePath) throws SecurityException, IOException {
 		if (checkError() < 0)
 			return errorCode;
@@ -156,7 +187,7 @@ public class PackFile extends BaseClass {
 			headerTemp[0] = aHeader;
 		}
 
-		header = new Header[(int) ((headerNum + 1) * multiple)];
+		header = new Header[(int) ((headerNum + 1) * factor)];
 		int index = 0, next = 0;
 		for (int i = 0; i < lenTemp; i++) {
 			if (headerTemp[i] == null)
@@ -166,7 +197,7 @@ public class PackFile extends BaseClass {
 			if (header[index] == null)
 				header[index] = headerTemp[i];
 			else {
-				// 发生碰撞时线性探测插�?
+				// if position cover happens, find next potition
 				int placedFlg = 0;
 				for (next = 1; next + index < header.length && placedFlg == 0; next++) {
 					if (header[index + next] == null) {
@@ -189,7 +220,6 @@ public class PackFile extends BaseClass {
 		headerNum++;
 
 		try {
-			// 在临时文件里写入内容
 			String packFilePath = packedFile + "_temp";
 			FileOutputStream fos = new FileOutputStream(packFilePath);
 			ObjectOutputStream oos = new ObjectOutputStream(fos);
@@ -226,7 +256,11 @@ public class PackFile extends BaseClass {
 		return errorCode;
 	}
 
-	// 将fileList里的文件打包到打包文件里
+	/**
+	 * pack files of fileList
+	 * 
+	 * @return
+	 */
 	public int packFileList() {
 		if (checkError() < 0)
 			return errorCode;
@@ -259,7 +293,6 @@ public class PackFile extends BaseClass {
 		}
 		fileList.clear();
 
-		// 传入的fileList计算其Header
 		Header[] correctHeader = new Header[correctList.size()];
 
 		for (int i = 0; i < correctList.size(); i++) {
@@ -279,7 +312,7 @@ public class PackFile extends BaseClass {
 			}
 		}
 
-		// aHeader与原有header[]合并
+		// header merge
 		Header[] headerTemp;
 		int lenTemp = correctHeader.length;
 		if (header != null) {
@@ -296,7 +329,7 @@ public class PackFile extends BaseClass {
 		}
 
 		logger.info("make the hash of headers - start");
-		header = new Header[(int) ((headerNum + correctHeader.length) * multiple)];
+		header = new Header[(int) ((headerNum + correctHeader.length) * factor)];
 		int index = 0, next = 0;
 		int maxOffsetPos = 0;
 		for (int i = 0; i < lenTemp; i++) {
@@ -308,7 +341,6 @@ public class PackFile extends BaseClass {
 				header[index] = headerTemp[i];
 				maxOffsetPos = index;
 			} else {
-				// 发生碰撞时线性探测插�?
 				int placedFlg = 0;
 				for (next = 1; next + index < header.length && placedFlg == 0; next++) {
 					if (header[index + next] == null) {
@@ -334,7 +366,7 @@ public class PackFile extends BaseClass {
 		logger.info("make the hash of headers - end");
 
 		try {
-			// 在临时文件里写入内容
+			// write contents to tempFile
 			logger.info("write to packed file - start");
 			String packFilePath = packedFile + "_temp";
 			FileOutputStream fos = new FileOutputStream(packFilePath);
@@ -386,7 +418,11 @@ public class PackFile extends BaseClass {
 		return errorCode;
 	}
 
-	// 将filePathList里的文件打包到打包文件里
+	/**
+	 * pack fileList by path
+	 * 
+	 * @return
+	 */
 	public int packFilePathList() {
 		if (checkError() < 0)
 			return errorCode;
@@ -418,7 +454,12 @@ public class PackFile extends BaseClass {
 		return errorCode;
 	}
 
-	// 获取打包文件的header部分，内存及硬盘
+	/**
+	 * get the header
+	 * 
+	 * @return
+	 * @throws IOException
+	 */
 	protected int getHeader() throws IOException {
 		logger.info("get the file header - start");
 		Common.deleteFile(headerTemp);
@@ -476,7 +517,11 @@ public class PackFile extends BaseClass {
 		return errorCode;
 	}
 
-	// 获取打包文件的文件部分，写入硬盘
+	/**
+	 * get the file content
+	 * 
+	 * @return
+	 */
 	protected int getFileContent() {
 		logger.info("get the file content - start");
 		try {
@@ -518,8 +563,12 @@ public class PackFile extends BaseClass {
 		return errorCode;
 	}
 
-	// 查看packed文件里的文件列表
-	public int lookAllPackedFileName() {
+	/**
+	 * see the file list
+	 * 
+	 * @return
+	 */
+	public int seeAllPackedFileName() {
 		int err = 0;
 		try {
 			if ((err = getHeader()) < 0)
@@ -537,7 +586,11 @@ public class PackFile extends BaseClass {
 		return err;
 	}
 
-	// 删除临时文件
+	/**
+	 * delete temp files
+	 * 
+	 * @return
+	 */
 	private int deleteTemp() {
 		int flg;
 		if ((flg = Common.deleteFile(headerTemp)) != 0) {
@@ -549,7 +602,13 @@ public class PackFile extends BaseClass {
 		return 0;
 	}
 
-	// 将重复文件命名为原名+序号的形�?
+	/**
+	 * rename file
+	 * 
+	 * @param fullName
+	 * @param sequence
+	 * @return
+	 */
 	protected String renameFile(String fullName, Integer sequence) {
 		fullName = fullName.trim();
 		String name = null;
